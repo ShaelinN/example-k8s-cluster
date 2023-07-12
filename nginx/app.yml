@@ -1,22 +1,16 @@
-apiVersion: v1
-kind: Deployment
+apiVersion: apps/v1
+kind: Pod
 metadata:
   name: nginx-deployment
   namespace: application
+  labels:
+    app.kubernetes.io/name: nginx
 spec:
-  selector:
-    matchLabels:
-      run: nginx
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        run: nginx
-    spec:
-      containers:
-        - name: nginx
-          image: nginx
-          containerPort: 80
+  containers:
+    - name: nginx
+      image: nginx
+      ports:
+      - containerPort: 80
 ---
 apiVersion: v1
 kind: Service
