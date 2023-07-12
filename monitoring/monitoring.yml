@@ -1,24 +1,120 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Application
+apiVersion: monitoring.grafana.com/v1alpha1
+kind: GrafanaAgent
 metadata:
-  name: loki-stack-charts
-  namespace: monitoring
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
+  name: grafana-agent
+  namespace: loki
+  labels:
+    app: grafana-agent
 spec:
-  destination:
-    name: ''
-    namespace: monitoring
-    server: 'https://kubernetes.default.svc'
-  source:
-    path: ''
-    repoURL: 'https://grafana.github.io/helm-charts'
-    targetRevision: 2.8.2
-    chart: loki-stack
-    helm:
-      values: |
-        minio:
-          enabled: true
-        loki:
-          auth_enabled: false
-  project: loki
+  image: grafana/agent:v0.34.2
+  integrations:
+    selector:
+      matchLabels:
+        agent: grafana-agent-integrations
+  image: grafana/agent:v0.34.2
+  logLevel: info
+  serviceAccountName: grafana-agent
+  metrics:
+    instanceSelector:
+      matchLabels:
+        agent: grafana-agent-metrics
+    externalLabels:
+      cluster: my-cluster
+  logs:
+    instanceSelector:
+      matchLabels:
+        agent: grafana-agent-logs
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: grafana-agent
+  namespace: loki
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: grafana-agent
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  - nodes/proxy
+  - nodes/metrics
+  - services
+  - endpoints
+  - pods
+  - events
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - networking.k8s.io
+  resources:
+    - ingresses
+  verbs:
+    - get
+    - list
+    - watch
+- nonResourceURLs:
+  - /metrics
+  - /metrics/cadvisor
+  verbs:
+    - get
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: grafana-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: grafana-agent
+subjects:
+  - kind: ServiceAccount
+    name: grafana-agent
+    namespace: loki
+
+---
+
+apiVersion: monitoring.grafana.com/v1alpha1
+kind: LogsInstance
+metadata:
+  name: primary
+  namespace: loki
+  labels:
+    agent: grafana-agent-logs
+spec:
+  clients:
+  - url: http://loki-gateway.loki.svc.cluster.local/loki/api/v1/push
+  podLogsNamespaceSelector: {}
+  podLogsSelector:
+    matchLabels:
+      instance: primary
+
+---
+
+apiVersion: monitoring.grafana.com/v1alpha1
+kind: PodLogs
+metadata:
+  labels:
+    instance: primary
+  name: kubernetes-pods
+  namespace: loki
+spec:
+  pipelineStages:
+    - docker: {}
+  namespaceSelector:
+    matchNames:
+      - app
+  selector:
+    matchLabels: 
+      name: flog
