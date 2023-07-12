@@ -26,7 +26,7 @@ metadata:
   namespace: application
 spec:
   selector:
-      app.kubernetes.io/name: nginx
+      run: nginx
   ports:
     - port: 80
       protocol: TCP
