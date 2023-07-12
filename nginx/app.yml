@@ -3,14 +3,21 @@ kind: Deployment
 metadata:
   name: nginx-deployment
   namespace: application
-  labels:
-    app.kubernetes.io/name: nginx
 spec:
-  containers:
-    - name: nginx
-      image: nginx
-      ports:
-      - containerPort: 80
+  selector:
+    matchLabels:
+      run: nginx
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+          ports:
+          - containerPort: 80
 ---
 apiVersion: v1
 kind: Service
