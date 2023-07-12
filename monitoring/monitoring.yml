@@ -4,20 +4,21 @@ metadata:
   name: loki-stack-charts
   namespace: monitoring
   finalizers:
-  - resources-finalizer.argocd.argoproj.io
+    - resources-finalizer.argocd.argoproj.io
 spec:
-  project: default
   destination:
-    server: "https://kubernetes.default.svc"
+    name: ''
     namespace: monitoring
+    server: 'https://kubernetes.default.svc'
   source:
-    chart: loki-stack
-    repoURL: https://grafana.github.io/helm-charts
+    path: ''
+    repoURL: 'https://grafana.github.io/helm-charts'
     targetRevision: 2.8.2
+    chart: loki-stack
     helm:
-      releaseName: loki
       values: |
         minio:
           enabled: true
         loki:
           auth_enabled: false
+  project: loki
