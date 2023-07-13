@@ -1,0 +1,10 @@
+minio:
+    enabled: true
+loki:
+    auth_enabled: false
+write:
+    replicas: 2
+read:
+    replicas: 1
+backend:
+    replicas: 1
